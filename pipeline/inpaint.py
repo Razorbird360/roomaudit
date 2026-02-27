@@ -85,8 +85,19 @@ def apply_defects_sequentially(pipe, source_image, defect_list, steps=FLUX_STEPS
 # Run FLUX inpainting over all images, write manifest.json to messy_dir
 def run_inpaint(pipe, all_detections, image_paths, messy_dir, num_variants, max_defects, flux_steps):
     messy_dir.mkdir(parents=True, exist_ok=True)
-    manifest = {}
+    manifest_path = messy_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+
     for img_path in tqdm(image_paths, desc="Inpainting"):
+        # Skip if all variant files already exist on disk
+        all_done = all(
+            (messy_dir / f"{img_path.stem}_v{v}.jpg").exists()
+            for v in range(1, num_variants + 1)
+        )
+        if all_done and img_path.name in manifest:
+            print(f"  Skipping {img_path.name}: already processed.")
+            continue
+
         source_image = Image.open(img_path).convert("RGB")
         detections = all_detections[img_path]
 
@@ -113,9 +124,9 @@ def run_inpaint(pipe, all_detections, image_paths, messy_dir, num_variants, max_
                 ],
             })
 
+        # Write manifest after each image so progress is never lost on crash
         manifest[img_path.name] = variants_list
-
-    (messy_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+        manifest_path.write_text(json.dumps(manifest, indent=2))
 
 
 if __name__ == "__main__":
