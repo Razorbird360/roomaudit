@@ -6,7 +6,7 @@ The obvious first instinct was to find an existing dataset. I looked at:
 
 - **Hotels-50K** — the images weren't suitable, wrong kind of content
 - **Places365** — too low resolution, wouldn't survive inpainting
-- **Booking.com scraping** — ToS violation, and hard to find many suitable images anyway
+- **Booking.com scraping** — ToS violation, and hard to find many suitable images 
 - **Flickr** — manually browsed but requires a Pro account ($8/month) to download in bulk, not worth it
 
 Eventually settled on manually downloading from **Unsplash**, **Pexels**, and **Flickr** (individual downloads). Ended up with 218 clean hotel room images.
@@ -97,10 +97,20 @@ During inpainting, the observed behaviour is:
 
 ---
 
+## Data generation run 1
+
+218 images, 3 variants each, up to 3 stacked defects per variant, 30 steps, guidance 30.0. Took **42h 10min** running locally.
+
+### Known issues
+
+Some images came out fine but others are noticeably unrealistic, for example defects like blood stains render as large dramatic splats rather than subtle marks. The high guidance (30.0) pushes the model too hard toward the prompt and away from the source image texture. Lowered to 10.0 for future runs, but proceeding with current dataset for now to unblock fine-tuning.
+
+---
+
 ## Current status
 
 - normalize: done
 - SAM3 detection: done, all 218 images masked
-- FLUX inpainting: in progress (running overnight, resume support added)
+- FLUX inpainting: done (run 1 complete)
 - Dataset formatting (VQA pairs): not started
-- Fine-tuning: not started
+- Fine-tuning: in progress

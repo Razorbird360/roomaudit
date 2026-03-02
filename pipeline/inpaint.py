@@ -15,7 +15,7 @@ from .prompts import DEFECT_PROMPTS
 FLUX_MODEL_ID   = "black-forest-labs/FLUX.1-Fill-dev"
 FLUX_STEPS      = 30
 FLUX_STEPS_TEST = 15
-FLUX_GUIDANCE   = 30.0
+FLUX_GUIDANCE   = 10.0
 
 NUM_VARIANTS      = 3
 MAX_DEFECTS       = 3
