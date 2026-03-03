@@ -54,9 +54,8 @@ Ended up reducing: **768px resolution, 3 variants per image, up to 3 defects per
 
 ### Fine-tuning model
 
-- **Qwen3-VL 4B** — considered as a smaller option. Scores 92–95% of the 7B on vision benchmarks, which is close but the quality gap matters for an inspection task.
 - **Qwen3-VL 8B** — needs ~24GB VRAM, doesn't fit on 16GB even with QLoRA.
-- **Qwen2.5-VL 7B** — what I'm going with. Loads in bfloat16 at ~14–16GB, then run 4-bit QLoRA via Unsloth's `FastVisionModel` to fit training within 16GB. LoRA adapters train on top of frozen quantized weights.
+- **Qwen3-VL 4B** — what I went with. Fits 16GB comfortably with 4-bit QLoRA via Unsloth's `FastVisionModel`. LoRA adapters (r=32) train on top of frozen quantized weights, ViT layers frozen.
 
 ---
 
@@ -64,9 +63,10 @@ Ended up reducing: **768px resolution, 3 variants per image, up to 3 defects per
 
 ```
 scripts/normalize_images.py   — resize all images to max 1920px, snap to multiple of 16, PNG→JPG
-pipeline/detect.py            — SAM3 detection, saves binary masks as .npz files to data/masks/
-pipeline/inpaint.py           — FLUX.1 Fill inpainting, saves variants + manifest.json to data/messy/
-pipeline/run.py               — entry point, runs both phases in sequence
+datagen/detect.py             — SAM3 detection, saves binary masks as .npz files to data/masks/
+datagen/inpaint.py            — FLUX.1 Fill inpainting, saves variants + manifest.json to data/messy/
+datagen/run.py                — entry point, runs both phases in sequence
+training/train.ipynb          — QLoRA fine-tuning notebook (dataset, training, metrics plot)
 ```
 
 VRAM strategy: SAM3 and FLUX can't coexist in 16GB. SAM3 runs first, then gets deleted and VRAM is freed with `torch.cuda.empty_cache()`, then FLUX loads.
@@ -107,10 +107,30 @@ Some images came out fine but others are noticeably unrealistic, for example def
 
 ---
 
+## Training run 1
+
+Qwen3-VL-4B, QLoRA r=32, lr=2e-4, 5 epochs, batch 2 × grad_accum 4. Dataset: 218 clean + 654 messy (3 variants per clean image) = 872 total, 85/15 train/eval split.
+
+> Accuracy: 0.769
+> Precision: 0.769
+> Recall: 1.000
+> F1: 0.870
+
+Train loss 0.086 → 0.012, eval loss bottomed ~0.048 at step 250 then started rising.
+
+### Issue: class imbalance
+
+Recall = 1.0 means the model essentially never predicts clean — it's biased toward always predicting "messy" because the dataset was 3:1 messy:clean. Precision 0.769 is just the natural result of that ratio. The model didn't really learn to distinguish; it learned to say messy every time.
+
+Fix for run 2: include each clean image 3× in the dataset (no file copies, just repeat the rows) to get a 1:1 ratio. Also: lower LR to 1e-4 since the model overfit fast, add lora_dropout 0.05, increase weight_decay to 0.05, reduce to 3 epochs.
+
+---
+
 ## Current status
 
 - normalize: done
 - SAM3 detection: done, all 218 images masked
-- FLUX inpainting: done (run 1 complete)
-- Dataset formatting (VQA pairs): not started
-- Fine-tuning: in progress
+- FLUX inpainting: done (run 1 complete, guidance 30.0)
+- Dataset formatting (VQA pairs): done
+- Training run 1: done — class imbalance issue identified
+- Training run 2: not started (balanced dataset + revised hyperparams)

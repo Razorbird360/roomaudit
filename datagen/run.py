@@ -1,5 +1,5 @@
 # Entry point: runs SAM3 detection then FLUX inpainting, saves results to data/messy/
-# Run from project root: python -m pipeline.run [--test]
+# Run from project root: python -m datagen.run [--test]
 
 import argparse
 import random

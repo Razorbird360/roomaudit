@@ -8,7 +8,7 @@
 import sys
 from pathlib import Path
 
-# Allow imports from project root (pipeline package)
+# Allow imports from project root (datagen package)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from PIL import Image
@@ -16,7 +16,7 @@ from tqdm import tqdm
 from huggingface_hub import hf_hub_download
 from sam3.model_builder import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
-from pipeline.prompts import OBJECT_PROMPTS
+from datagen.prompts import OBJECT_PROMPTS
 
 ROOT      = Path(__file__).parent.parent
 CLEAN_DIR = ROOT / "data" / "clean"

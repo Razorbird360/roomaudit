@@ -30,8 +30,9 @@ dist/
 build/
 *.egg
 
+unsloth_compiled_cache/
+
 .ipynb_checkpoints/
-*.ipynb
 
 *.log
 logs/
