@@ -5,6 +5,7 @@ from PIL import Image
 import io
 
 import model as m
+import agent
 
 
 @asynccontextmanager
@@ -34,5 +35,5 @@ async def inspect(file: UploadFile):
     except Exception:
         raise HTTPException(400, "Invalid image file")
 
-    result = m.inspect(image)
+    result = agent.inspect_with_agent(image)
     return result

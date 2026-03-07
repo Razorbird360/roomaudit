@@ -52,6 +52,7 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+debug.log
 
 .claude
 

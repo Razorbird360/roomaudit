@@ -53,7 +53,7 @@ Worse than run 2 across the board. The lower LR just slowed convergence without 
 
 ---
 
-## Run 4
+## Run 4 (v5)
 
 Same model and balanced dataset as runs 2/3. Reverted lr back to 1e-4 (run 3 showed 8e-5 was worse), capped at 4 epochs, added `EarlyStoppingCallback(patience=4)` to stop if eval_loss doesn't improve for 4 consecutive checks (100 steps).
 

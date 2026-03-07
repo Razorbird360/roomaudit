@@ -11,6 +11,8 @@ export interface Defect {
 export interface InspectResult {
   clean: boolean;
   defects: Defect[];
+  crop_regions?: [number, number, number, number][];
+  crop_reasons?: (string | null | undefined)[];
 }
 
 function formatSnakeCase(s: string): string {

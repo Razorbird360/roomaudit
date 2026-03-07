@@ -1,4 +1,4 @@
-# Install in this order — see README.md Setup section for full instructions
+# datagen + training deps — install in this order (see README.md Setup section)
 
 # HuggingFace ecosystem
 diffusers>=0.32.0

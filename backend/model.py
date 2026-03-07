@@ -9,7 +9,7 @@ from qwen_vl_utils import process_vision_info
 ADAPTER_PATH = Path(__file__).resolve().parent.parent / "outputs" / "lora_adapter"
 
 VALID_OBJECTS = {
-    "pillow", "bed_sheet", "blanket", "floor", "carpet",
+    "pillow", "bed", "blanket", "floor", "carpet",
     "chair", "desk", "mirror", "sofa", "bath_towel", "bin", "window",
 }
 VALID_TYPES = {"stain", "hair", "debris", "litter", "not_emptied", "dirty"}
@@ -76,21 +76,21 @@ def load_model():
     print(f"Model loaded on {device}")
 
 
-def inspect(image: Image.Image) -> dict:
-    """Run inference on a single image. Returns {"clean": bool, "defects": [...]}."""
+MAX_EDGE = 1920
+
+
+def _scale(image: Image.Image) -> Image.Image:
+    w, h = image.size
+    if max(w, h) > MAX_EDGE:
+        scale = MAX_EDGE / max(w, h)
+        return image.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    return image
+
+
+def _run_raw(messages: list) -> dict:
+    """Run inference on a pre-built messages list. Returns raw parsed JSON (no validation)."""
     if model is None or tokenizer is None:
         raise RuntimeError("Model not loaded")
-
-    messages = [
-        {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
-        {
-            "role": "user",
-            "content": [
-                {"type": "image", "image": image},
-                {"type": "text", "text": QUESTION},
-            ],
-        },
-    ]
 
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     image_inputs, _ = process_vision_info(messages)
@@ -110,18 +110,17 @@ def inspect(image: Image.Image) -> dict:
     gen_ids = [o[len(i):] for i, o in zip(inputs.input_ids, out_ids)]
     output_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)[0].strip()
 
-    # Parse JSON from model output
     try:
         match = re.search(r"\{.*\}", output_text, re.DOTALL)
-        if not match:
-            return {"clean": True, "defects": []}
-        result = json.loads(match.group())
+        return json.loads(match.group()) if match else {}
     except (json.JSONDecodeError, AttributeError):
-        return {"clean": True, "defects": []}
+        return {}
 
-    # Validate defects
+
+def _validate(raw: dict) -> dict:
+    """Validate and normalise a classification result dict."""
     validated_defects = []
-    for d in result.get("defects", []):
+    for d in raw.get("defects", []):
         obj = d.get("object", "")
         dtype = d.get("type", "")
         if obj in VALID_OBJECTS and dtype in VALID_TYPES:
@@ -130,7 +129,21 @@ def inspect(image: Image.Image) -> dict:
                 "type": dtype,
                 "description": d.get("description", ""),
             })
-
-    is_clean = len(validated_defects) == 0 and result.get("clean", True)
-
+    is_clean = len(validated_defects) == 0 and raw.get("clean", True)
     return {"clean": is_clean, "defects": validated_defects}
+
+
+def inspect(image: Image.Image, system_prompt: str = SYSTEM_PROMPT, question: str = QUESTION) -> dict:
+    """Run single-turn inference on a single image."""
+    image = _scale(image)
+    messages = [
+        {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
+        {
+            "role": "user",
+            "content": [
+                {"type": "image", "image": image},
+                {"type": "text", "text": question},
+            ],
+        },
+    ]
+    return _validate(_run_raw(messages))

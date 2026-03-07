@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +12,34 @@ export function Inspect() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<InspectResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [cropPreviews, setCropPreviews] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Render crop thumbnails via canvas whenever result includes crop_regions
+  useEffect(() => {
+    if (!result?.crop_regions?.length || !preview) {
+      setCropPreviews([]);
+      return;
+    }
+    const img = new window.Image();
+    img.onload = () => {
+      const previews = result.crop_regions!.map(([x1, y1, x2, y2]) => {
+        const sw = (x2 - x1) * img.naturalWidth;
+        const sh = (y2 - y1) * img.naturalHeight;
+        const canvas = document.createElement("canvas");
+        canvas.width = sw;
+        canvas.height = sh;
+        canvas.getContext("2d")!.drawImage(
+          img,
+          x1 * img.naturalWidth, y1 * img.naturalHeight, sw, sh,
+          0, 0, sw, sh
+        );
+        return canvas.toDataURL();
+      });
+      setCropPreviews(previews);
+    };
+    img.src = preview;
+  }, [result, preview]);
 
   const handleFile = useCallback((f: File) => {
     setFile(f);
@@ -140,6 +167,31 @@ export function Inspect() {
           "Inspect Room"
         )}
       </button>
+
+      {cropPreviews.length > 0 && (
+        <motion.div
+          className="w-full space-y-2"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <p className="text-xs text-muted-foreground">Model inspected these regions:</p>
+          <div className="flex gap-3">
+            {cropPreviews.map((src, i) => (
+              <div key={i} className="flex-1 space-y-1">
+                <img
+                  src={src}
+                  alt={`Crop ${i + 1}`}
+                  className="rounded-md w-full max-h-36 object-contain border border-border"
+                />
+                {result?.crop_reasons?.[i] && (
+                  <p className="text-xs text-muted-foreground">{result.crop_reasons[i]}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {result && <ResultCard result={result} />}
     </div>

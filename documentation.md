@@ -119,15 +119,26 @@ Also ran ViT+LLM LoRA experiments on the same dataset to test whether fine-tunin
 
 ---
 
-## Current status
+### Metrics
 
-- normalize: done
-- SAM3 detection: done, all 218 images masked
-- FLUX inpainting run 1: done (FLUX guidance_scale=30)
-- Dataset formatting (VQA pairs): done
-- Training run 1 (FLUX guidance_scale=30): done — class imbalance identified
-- Training run 2 (FLUX guidance_scale=30): done — genuine classification, precision weak (0.693)
-- Training run 3 (FLUX guidance_scale=30): done — no improvement, data ceiling confirmed
-- Training run 4 (FLUX guidance_scale=30): done — healthy training, ceiling confirmed (F1 0.774)
-- FLUX inpainting run 2: not started (FLUX guidance_scale=10, cleaner defects)
-- Training run 5+: not started
+**LLM LoRA — Run 4 (v5):** Qwen3-VL-4B, r=32, lr=1e-4, 4 epochs, early stopping, balanced dataset.
+
+![LLM LoRA training metrics](docs/assets/metrics.png)
+
+**ViT + LLM LoRA — Run 1:** Same setup with `finetune_vision_layers=True`.
+
+![ViT+LLM LoRA training metrics](docs/assets/metrics_vit.png)
+
+---
+
+## Inference agent
+
+After fine-tuning, the inference pipeline was a simple single-pass call: upload image, model returns clean/messy and a defect list. That works for clear, well-lit images but borderline cases like blurry corners or small stains near the edge of frame are genuinely harder to assess from a full-room shot at inference resolution.
+
+I looked into how agentic multi-turn patterns work with vision models. The core idea is that the model gets to request a tool call mid-inference, the system executes it, and the result gets passed back into the conversation before the model commits to a final answer. For room inspection this made sense, the model says "zoom in there", gets the crop, then decides.
+
+The implementation is in `backend/agent.py`. Round 1 sends the full image with a prompt asking the model to identify 1-2 regions worth closer inspection. It responds with region coordinates as normalised 0-1 fractions of the image. The backend crops those regions, then builds a second message that includes the full conversation history from round 1 plus the cropped images. Round 2 runs with all of that in context: the original image, the model's own region selections, and the zoomed crops.
+
+Round 2 isn't a fresh call with just the crop, as that would lose all context from round 1. Instead, the full conversation history carries over, so the model can see its own previous response before giving a final answer.
+
+The frontend shows both crop thumbnails after the result arrives, with the model's stated reason for each region.

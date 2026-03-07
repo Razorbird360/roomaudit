@@ -5,7 +5,7 @@ export function CurvedArrow({ flip = false }: { flip?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["start 0.8", "end 0.3"],
+    offset: ["start 0.9", "end 0.55"],
   });
   const pathLength = useTransform(scrollYProgress, [0, 1], [0, 1]);
   const arrowOpacity = useTransform(scrollYProgress, [0.85, 1], [0, 1]);

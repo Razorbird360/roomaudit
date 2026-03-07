@@ -1,6 +1,6 @@
 # roomaudit
 
-Fine-tuning of a vision model to detect hotel room cleanliness defects, with a web interface for live inspection.
+Fine-tuning of a vision model to detect hotel room cleanliness defects, with an agentic web interface for live inspection. The inference pipeline is multi-step: the model first identifies regions worth closer inspection, receives cropped views of those areas, then gives its final verdict with full context.
 
 **Pipeline:** clean room images → SAM3 segmentation → FLUX.1 Fill inpainting → messy images → fine-tune Qwen3-VL
 
@@ -17,6 +17,7 @@ frontend/              — React + Vite web app
 backend/               — FastAPI inference server
   main.py              — API: POST /inspect
   model.py             — Qwen3-VL + LoRA loading (CUDA/MPS/CPU)
+  agent.py             — two-round agentic inspection loop
 datagen/
   prompts.py           — OBJECT_PROMPTS and DEFECT_PROMPTS
   detect.py            — SAM3 detection, saves masks to data/masks/
@@ -71,7 +72,7 @@ pip install unsloth
 
 **4. Everything else:**
 ```bash
-pip install -r requirements.txt
+pip install -r datagen/requirements.txt
 ```
 
 **5. Log in to HuggingFace** (SAM3 and FLUX.1 Fill are gated models):
@@ -111,3 +112,5 @@ Open `training/train.ipynb` and run cells top to bottom.
 | Inpainting | `black-forest-labs/FLUX.1-Fill-dev` |
 | Fine-tuning target | `unsloth/Qwen3-VL-4B-Instruct-unsloth-bnb-4bit` |
 | Inference (MPS/CPU) | `Qwen/Qwen3-VL-4B-Instruct` |
+
+

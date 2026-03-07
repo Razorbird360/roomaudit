@@ -1,6 +1,6 @@
 OBJECT_PROMPTS = {
     "pillow":     "pillow",
-    "bed_sheet":  "bed sheet",
+    "bed":        "bed",
     "blanket":    "blanket",
     "floor":      "floor",
     "carpet":     "carpet",
@@ -20,12 +20,12 @@ DEFECT_PROMPTS = {
         ("a pillow with a large deep sunken hollow pressed into the center, foam visibly compressed, pillowcase heavily creased and rumpled around the depression", "indentation"),
         ("a blood stain on the white pillow",                                 "stain"),
     ],
-    "bed_sheet": [
-        ("dark hairs scattered across the white bed sheet",                   "hair"),
-        ("a brown stain on the white bed sheet",                              "stain"),
-        ("a blood stain on the white bed sheet",                              "stain"),
-        ("food crumbs scattered across the bed sheet",                        "debris"),
-        ("a coffee stain spreading across the white bed sheet",               "stain"),
+    "bed": [
+        ("dark hairs scattered across the white bed",                         "hair"),
+        ("a brown stain on the white bed",                                    "stain"),
+        ("a blood stain on the white bed",                                    "stain"),
+        ("food crumbs scattered across the bed",                              "debris"),
+        ("a coffee stain spreading across the white bed",                     "stain"),
     ],
     "blanket": [
         ("dark hair strands on the white blanket cover",                      "hair"),
